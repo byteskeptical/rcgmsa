@@ -4,11 +4,42 @@ BeforeAll {
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
         Files    = @{
-            'license.key' = 'RECORD_ID_FOR_FILE'
+            'license.key' = 'RECORD_ID_LICENSE'
+            'config.json' = 'RECORD_ID_CONFIG'
         }
         Keys     = @('API_KEY', 'DB_PASS', 'Files')
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
+    $setupPath = "$PSScriptRoot/../vault.ps1"
+    $vaultName = 'devops'
+
+    function Get-Credential {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory=$false)]
+            [string]$UserName,
+
+            [Parameter(Mandatory=$false)]
+            [string]$Message
+        )
+        $securePass = ConvertTo-SecureString $env:VAULT -AsPlainText -Force
+        return [PSCredential]::new($UserName, $securePass)
+    }
+
+    $credFile = [System.IO.Path]::GetTempFileName()
+    . $setupPath -Path $credFile -Vault $vaultName
+
+    Remove-Item Function:\Get-Credential -ErrorAction Stop
+
+    $securePass = ConvertTo-SecureString $env:VAULT -AsPlainText -Force
+    Unlock-SecretStore -Password $securePass -Force
+
+    $configBytes = [System.Text.Encoding]::UTF8.GetBytes('ConfigContent')
+    $fileBytes = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
+
+    Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
+    Set-Secret -Name 'RECORD_ID_CONFIG' -Secret $configBytes -Vault $vaultName
+    Set-Secret -Name 'RECORD_ID_LICENSE' -Secret $fileBytes -Vault $vaultName
 }
 
 Describe 'Integration Tests' {
@@ -47,29 +78,35 @@ Describe 'Integration Tests' {
             Mock New-Item { return 'C:\Mock\Temp' }
             Mock Remove-Item {}
             Mock Set-Content {}
-            Mock Unlock-SecretStore {}
         }
 
         It 'Should retrieve secrets and process files when -Keeper is used' {
-            Mock Get-Secret -MockWith { 
-                if ($args[1] -match 'RECORD_ID_FOR_FILE') {
-                    return [System.Text.Encoding]::UTF8.GetBytes('FileContent')
-                }
-                return $keeperSecret
-            }
-
             & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez' -Vault 'devops'
 
-            Assert-MockCalled Get-Secret -ParameterFilter {
-                $Name -eq 'RecordID'
+            $api_key = [Environment]::GetEnvironmentVariable('KEEPER_API_KEY', 'User')
+            $api_key | Should -Be $keeperSecret.API_KEY
+
+            [Environment]::SetEnvironmentVariable('KEEPER_API_KEY', $null, 'User')
+
+            Assert-MockCalled Set-Content -ParameterFilter {
+                $Path -match 'config.json'
             } -Times 1
-            Assert-MockCalled Get-Secret -ParameterFilter {
-                $Name -eq 'RECORD_ID_FOR_FILE'
-            } -Times 1
+
             Assert-MockCalled Set-Content -ParameterFilter {
                 $Path -match 'license.key'
             } -Times 1
-            Assert-MockCalled Unlock-SecretStore -Times 1
+        }
+
+        It 'Should inject KEEPER_ variables into the scriptblock' {
+            Mock Invoke-Command -MockWith { 
+                param($ScriptBlock) 
+                return $ScriptBlock.ToString() 
+            }
+
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez'
+
+            $sbContent | Should -Match 'KEEPER_'
+            $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
         }
     }
 
@@ -115,25 +152,6 @@ Describe 'Integration Tests' {
             Assert-MockCalled Invoke-Command -ParameterFilter { 
                 $SessionOption.IncludePortInSPN -eq $true 
             } -Times 1
-        }
-    }
-
-    Context 'Environment Variable Injection' {
-        It 'Should inject KEEPER_ variables into the scriptblock' {
-            Mock Get-Secret -MockWith { return $keeperSecret }
-            Mock Invoke-Command -MockWith { 
-                param($ScriptBlock) 
-                return $ScriptBlock.ToString() 
-            }
-            Mock New-Item { return 'C:\Mock\Temp' }
-            Mock Remove-Item {}
-            Mock Set-Content {}
-            Mock Unlock-SecretStore {}
-
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez'
-
-            $sbContent | Should -Match 'KEEPER_'
-            $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
         }
     }
 }
