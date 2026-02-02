@@ -45,4 +45,8 @@ jobs:
           $config.Run.Exit = $true
           $config.Run.Path = .\tests\rcgmsa.Tests.ps1
 
-          Invoke-Pester -Configuration $config
+          $result = Invoke-Pester -Configuration $config
+
+          if ($result.FailedCount -gt 0) {
+              exit 1
+          }

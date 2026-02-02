@@ -19,8 +19,7 @@ Describe 'Integration Tests' {
 
     Context 'Input Validation' {
         It 'Should accept valid hostnames or IPs' {
-            $expectedErr = "Connecting to remote server * failed with the following error message : The WinRM client cannot process the request.*"
-            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','127.0.0.1' -User 'svc_account$' } | Should -Throw $expectedErr
+            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','127.0.0.1' -User 'svc_account$' } | Should -Not -Throw
         }
 
         It 'Should reject invalid characters in computer names' {
@@ -41,10 +40,10 @@ Describe 'Integration Tests' {
 
     Context 'Keeper Vault Integration' {
         BeforeAll {
-            function Install-Module {}
             Mock New-Object {
-                return [PSCredential]::new('User',
-                                           (ConvertTo-SecureString 'pass' -AsPlainText -Force)
+                return [PSCredential]::new(
+                    'User',
+                    (ConvertTo-SecureString 'pass' -AsPlainText -Force)
                 )
             }
             Mock Import-Module {}
@@ -65,20 +64,27 @@ Describe 'Integration Tests' {
                 return $keeperSecret
             }
 
-            & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper 'RecordID' -Vault 'devops'
+            & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez' -Vault 'devops'
 
+            Assert-MockCalled Get-Secret -ParameterFilter {
+                $Name -eq 'RecordID'
+            } -Times 1
+            Assert-MockCalled Get-Secret -ParameterFilter {
+                $Name -eq 'RECORD_ID_FOR_FILE'
+            } -Times 1
+            Assert-MockCalled Set-Content -ParameterFilter {
+                $Path -match 'license.key'
+            } -Times 1
             Assert-MockCalled Unlock-SecretStore -Times 1
-            Assert-MockCalled Get-Secret -ParameterFilter { $Name -eq 'RecordID' } -Times 1
-            Assert-MockCalled Get-Secret -ParameterFilter { $Name -eq 'RECORD_ID_FOR_FILE' } -Times 1
-            Assert-MockCalled Set-Content -ParameterFilter { $Path -match 'license.key' } -Times 1
         }
     }
 
     Context 'Logic Branching' {
         BeforeAll {
             Mock New-Object {
-                return [PSCredential]::new('User',
-                                           (ConvertTo-SecureString 'pass' -AsPlainText -Force)
+                return [PSCredential]::new(
+                    'User',
+                    (ConvertTo-SecureString 'pass' -AsPlainText -Force)
                 )
             }
             Mock Import-Module {}
@@ -96,7 +102,9 @@ Describe 'Integration Tests' {
         }
 
         It 'Should retry with -IncludePortInSPN if a specific SPN error occurs' {
-            Mock Invoke-Command -ParameterFilter { -not ($SessionOption.IncludePortInSPN) } -MockWith {
+            Mock Invoke-Command -ParameterFilter {
+                -not ($SessionOption.IncludePortInSPN)
+            } -MockWith {
                 $err = [System.Management.Automation.ErrorRecord]::new(
                     [Exception]::new('SPN Error'),
                     '-2144108387,PSSessionStateBroken',
@@ -106,12 +114,14 @@ Describe 'Integration Tests' {
                 throw $err
             }
 
-            Mock Invoke-Command -ParameterFilter { $SessionOption.IncludePortInSPN -eq $true } -MockWith { return 'Retry Successful' }
+            Mock Invoke-Command -MockWith { return 'Retry Successful' }
 
-            $result = & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$' 6>&1
+            & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$'
 
             Assert-MockCalled Invoke-Command -Times 2
-            $result | Should -Be 'Retry Successful'
+            Assert-MockCalled Invoke-Command -ParameterFilter { 
+                $SessionOption.IncludePortInSPN -eq $true 
+            } -Times 1
         }
     }
 
@@ -127,7 +137,7 @@ Describe 'Integration Tests' {
             Mock Set-Content {}
             Mock Unlock-SecretStore {}
 
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper 'rec1'
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez'
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
