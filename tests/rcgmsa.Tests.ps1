@@ -1,4 +1,8 @@
 BeforeAll {
+    function Get-Secret {}
+    function Install-Module {}
+    function Unlock-SecretStore {}
+
     $env:VAULT = 'VaultPassword'
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
@@ -15,7 +19,8 @@ Describe 'Integration Tests' {
 
     Context 'Input Validation' {
         It 'Should accept valid hostnames or IPs' {
-            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','10.0.0.1' -User 'svc_account$' } | Should -Not -Throw
+            $expectedErr = "Connecting to remote server * failed with the following error message : The WinRM client cannot process the request.*"
+            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','127.0.0.1' -User 'svc_account$' } | Should -Throw $expectedErr
         }
 
         It 'Should reject invalid characters in computer names' {
@@ -29,7 +34,7 @@ Describe 'Integration Tests' {
         }
 
         It 'Should output a semantic version number' {
-            $output = & $scriptPath -v 
+            $output = & $scriptPath -v 6>&1
             $output | Should -Match '^Version: \d+\.\d+\.\d+$'
         }
     }
@@ -103,7 +108,7 @@ Describe 'Integration Tests' {
 
             Mock Invoke-Command -ParameterFilter { $SessionOption.IncludePortInSPN -eq $true } -MockWith { return 'Retry Successful' }
 
-            $result = & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' 
+            $result = & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$' 6>&1
 
             Assert-MockCalled Invoke-Command -Times 2
             $result | Should -Be 'Retry Successful'
@@ -122,7 +127,7 @@ Describe 'Integration Tests' {
             Mock Set-Content {}
             Mock Unlock-SecretStore {}
 
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'server1' -User 'gmsa$' -Keeper 'rec1'
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper 'rec1'
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'

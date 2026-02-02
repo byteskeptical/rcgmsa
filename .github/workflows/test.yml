@@ -9,7 +9,7 @@ on:
 
 defaults:
   run:
-    shell: powershell
+    shell: pwsh
 
 jobs:
   test:
@@ -43,6 +43,6 @@ jobs:
           $config = New-PesterConfiguration
           $config.Output.Verbosity = 'Detailed'
           $config.Run.Exit = $true
-          $config.Run.Path = .\tests\test_rcgmsa.ps1
+          $config.Run.Path = .\tests\rcgmsa.Tests.ps1
 
           Invoke-Pester -Configuration $config
