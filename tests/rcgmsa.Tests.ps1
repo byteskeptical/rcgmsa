@@ -1,8 +1,4 @@
 BeforeAll {
-    function Get-Secret {}
-    function Install-Module {}
-    function Unlock-SecretStore {}
-
     $env:VAULT = 'VaultPassword'
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
@@ -46,8 +42,6 @@ Describe 'Integration Tests' {
                     (ConvertTo-SecureString 'pass' -AsPlainText -Force)
                 )
             }
-            Mock Import-Module {}
-            Mock Install-Module {}
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }
@@ -87,7 +81,6 @@ Describe 'Integration Tests' {
                     (ConvertTo-SecureString 'pass' -AsPlainText -Force)
                 )
             }
-            Mock Import-Module {}
             Mock New-Item { return 'C:\Mock\Temp' }
             Mock Remove-Item {}
             Mock Set-Content {}
