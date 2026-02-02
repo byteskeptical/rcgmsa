@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches: [root]
+  pull_request:
+    branches: [root]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: powershell
+
+jobs:
+  test:
+    name: Validate
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install
+        run: |
+          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+
+      - name: Lint
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path .\rcgmsa.ps1 -Severity Error
+          if ($results) {
+              $results | Format-Table
+              Write-Error "PSScriptAnalyzer found issues. Please fix them."
+          } else {
+              Write-Host "PSScriptAnalyzer passed."
+          }
+
+      - name: Test
+        run: |
+          Invoke-Pester -Path .\tests\test_rcgmsa.ps1 -Output Detailed
