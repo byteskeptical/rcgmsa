@@ -32,7 +32,7 @@ BeforeAll {
     Remove-Item Function:\Get-Credential -ErrorAction Stop
 
     $securePass = ConvertTo-SecureString $env:VAULT -AsPlainText -Force
-    Unlock-SecretStore -Password $securePass -Force
+    Unlock-SecretStore -Password $securePass
 
     $configBytes = [System.Text.Encoding]::UTF8.GetBytes('ConfigContent')
     $fileBytes = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
