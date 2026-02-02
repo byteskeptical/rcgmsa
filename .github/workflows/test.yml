@@ -41,7 +41,8 @@ jobs:
       - name: Test
         run: |
           $config = New-PesterConfiguration
-          $config.Run.Exit = $true
           $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          $config.Run.Path = .\tests\test_rcgmsa.ps1
 
-          Invoke-Pester -Configuration $config -Path .\tests\test_rcgmsa.ps1
+          Invoke-Pester -Configuration $config
