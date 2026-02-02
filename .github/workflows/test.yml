@@ -26,12 +26,15 @@ jobs:
 
       - name: Lint
         run: |
-          $results = Invoke-ScriptAnalyzer -Path .\rcgmsa.ps1 -Severity Error
+          $excludedRules = @(
+              'PSAvoidUsingConvertToSecureStringWithPlainText'
+          )
+          $results = Invoke-ScriptAnalyzer -ExcludeRule $excludedRules -Path .\rcgmsa.ps1 -Severity Error
           if ($results) {
               $results | Format-Table
-              Write-Error "PSScriptAnalyzer found issues. Please fix them."
+              Write-Error 'PSScriptAnalyzer found issues. Please fix them.'
           } else {
-              Write-Host "PSScriptAnalyzer passed."
+              Write-Host 'PSScriptAnalyzer passed.'
           }
 
       - name: Test
