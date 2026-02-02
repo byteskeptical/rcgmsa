@@ -1,0 +1,9 @@
+* eol=lf text=auto
+
+*.ps1 text
+*.md text
+*.txt text
+
+*.data binary
+*.jpg binary
+*.png binary
