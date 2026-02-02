@@ -30,6 +30,7 @@ jobs:
               'PSAvoidUsingConvertToSecureStringWithPlainText'
           )
           $results = Invoke-ScriptAnalyzer -ExcludeRule $excludedRules -Path .\rcgmsa.ps1 -Severity Error
+
           if ($results) {
               $results | Format-Table
               Write-Error 'PSScriptAnalyzer found issues. Please fix them.'
@@ -39,4 +40,8 @@ jobs:
 
       - name: Test
         run: |
-          Invoke-Pester -Path .\tests\test_rcgmsa.ps1 -Output Detailed
+          $config = New-PesterConfiguration
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+
+          Invoke-Pester -Configuration $config -Path .\tests\test_rcgmsa.ps1

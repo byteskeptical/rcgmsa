@@ -15,20 +15,28 @@ Describe 'Integration Tests' {
 
     Context 'Input Validation' {
         It 'Should accept valid hostnames or IPs' {
-            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','10.0.0.1' -User 'svc_account$' -v } | Should -Not -Throw
+            { & $scriptPath -Command 'Get-Date' -Computers 'localhost','10.0.0.1' -User 'svc_account$' } | Should -Not -Throw
         }
 
         It 'Should reject invalid characters in computer names' {
-            { & $scriptPath -Command 'Get-Date' -Computers 'bad_host!' -User 'svc_account$' -v } | Should -Throw 'Creativity meets catastrophe'
+            $expectedErr = "Cannot validate argument on parameter 'Computers'. Creativity meets catastrophe, invalid computer name: bad_host!"
+            { & $scriptPath -Command 'Get-Date' -Computers 'bad_host!' -User 'svc_account$' } | Should -Throw $expectedErr
         }
 
         It 'Should reject invalid characters in orb names' {
-            { & $scriptPath -Command 'Get-Date' -Computers 'localhost' -User 'svc_account$' -Orbs 'bad_orb!' -v } | Should -Throw "For FQDN's sake"
+            $expectedErr = "Cannot validate argument on parameter 'Orbs'. For FQDN's sake, invalid computer name: bad_orb!"
+            { & $scriptPath -Command 'Get-Date' -Computers 'localhost' -User 'svc_account$' -Orbs 'bad_orb!' } | Should -Throw $expectedErr
+        }
+
+        It 'Should output a semantic version number' {
+            $output = & $scriptPath -v 
+            $output | Should -Match '^Version: \d+\.\d+\.\d+$'
         }
     }
 
     Context 'Keeper Vault Integration' {
         BeforeAll {
+            function Install-Module {}
             Mock New-Object {
                 return [PSCredential]::new('User',
                                            (ConvertTo-SecureString 'pass' -AsPlainText -Force)
@@ -83,7 +91,7 @@ Describe 'Integration Tests' {
         }
 
         It 'Should retry with -IncludePortInSPN if a specific SPN error occurs' {
-            Mock Invoke-Command -ParameterFilter { -not $IncludePortInSPN } -MockWith {
+            Mock Invoke-Command -ParameterFilter { -not ($SessionOption.IncludePortInSPN) } -MockWith {
                 $err = [System.Management.Automation.ErrorRecord]::new(
                     [Exception]::new('SPN Error'),
                     '-2144108387,PSSessionStateBroken',
@@ -93,7 +101,7 @@ Describe 'Integration Tests' {
                 throw $err
             }
 
-            Mock Invoke-Command -ParameterFilter { $IncludePortInSPN } -MockWith { return 'Retry Successful' }
+            Mock Invoke-Command -ParameterFilter { $SessionOption.IncludePortInSPN -eq $true } -MockWith { return 'Retry Successful' }
 
             $result = & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' 
 
@@ -104,7 +112,7 @@ Describe 'Integration Tests' {
 
     Context 'Environment Variable Injection' {
         It 'Should inject KEEPER_ variables into the scriptblock' {
-            Mock Get-Secret -Return $keeperSecret
+            Mock Get-Secret -MockWith { return $keeperSecret }
             Mock Invoke-Command -MockWith { 
                 param($ScriptBlock) 
                 return $ScriptBlock.ToString() 
