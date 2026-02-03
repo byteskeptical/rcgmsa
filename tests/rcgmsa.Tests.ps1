@@ -7,7 +7,6 @@ BeforeAll {
             'license.key' = 'RECORD_ID_LICENSE'
             'config.json' = 'RECORD_ID_CONFIG'
         }
-        Keys     = @('API_KEY', 'DB_PASS', 'Files')
     }
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
