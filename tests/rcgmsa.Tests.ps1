@@ -9,6 +9,7 @@ BeforeAll {
         }
         Keys     = @('API_KEY', 'DB_PASS', 'Files')
     }
+    $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $setupPath = "$PSScriptRoot/../vault.ps1"
     $vaultName = 'devops'
@@ -81,7 +82,7 @@ Describe 'Integration Tests' {
         }
 
         It 'Should retrieve secrets and process files when -Keeper is used' {
-            & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez' -Vault 'devops'
+            & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper $secretName -Vault 'devops'
 
             $api_key = [Environment]::GetEnvironmentVariable('KEEPER_API_KEY', 'User')
             $api_key | Should -Be $keeperSecret.API_KEY
@@ -103,7 +104,7 @@ Describe 'Integration Tests' {
                 return $ScriptBlock.ToString() 
             }
 
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper '9vb_wew-d6_AmgUNmIO6Ez'
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
