@@ -3,10 +3,7 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = @{
-            'license.key' = 'RECORD_ID_LICENSE'
-            'config.json' = 'RECORD_ID_CONFIG'
-        }
+        Files    = 'license.key'
     }
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
@@ -34,12 +31,10 @@ BeforeAll {
     $securePass = ConvertTo-SecureString $env:VAULT -AsPlainText -Force
     Unlock-SecretStore -Password $securePass
 
-    $configBytes = [System.Text.Encoding]::UTF8.GetBytes('ConfigContent')
     $fileBytes = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    Set-Secret -Name 'RECORD_ID_CONFIG' -Secret $configBytes -Vault $vaultName
-    Set-Secret -Name 'RECORD_ID_LICENSE' -Secret $fileBytes -Vault $vaultName
+    Set-Secret -Name $keeperSecret.Files -Secret $fileBytes -Vault $vaultName
 }
 
 Describe 'Integration Tests' {
@@ -87,10 +82,6 @@ Describe 'Integration Tests' {
             $api_key | Should -Be $keeperSecret.API_KEY
 
             [Environment]::SetEnvironmentVariable('KEEPER_API_KEY', $null, 'User')
-
-            Assert-MockCalled Set-Content -ParameterFilter {
-                $Path -match 'config.json'
-            } -Times 1
 
             Assert-MockCalled Set-Content -ParameterFilter {
                 $Path -match 'license.key'
