@@ -65,7 +65,7 @@ Describe 'Integration Tests' {
             Mock New-Object {
                 return [PSCredential]::new(
                     'User',
-                    (ConvertTo-SecureString $env.VAULT -AsPlainText -Force)
+                    (ConvertTo-SecureString $env:VAULT -AsPlainText -Force)
                 )
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
@@ -106,7 +106,7 @@ Describe 'Integration Tests' {
             Mock New-Object {
                 return [PSCredential]::new(
                     'User',
-                    (ConvertTo-SecureString $env.VAULT -AsPlainText -Force)
+                    (ConvertTo-SecureString $env:VAULT -AsPlainText -Force)
                 )
             }
             Mock New-Item { return 'C:\Mock\Temp' }
