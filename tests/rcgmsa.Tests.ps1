@@ -1,14 +1,20 @@
 BeforeAll {
-    $env:VAULT = 'VaultPassword'
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
         Files    = 'license.key'
     }
-    $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
+    $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $setupPath = "$PSScriptRoot/../vault.ps1"
     $vaultName = 'devops'
+    $vaultPassword  = 'VaultPassword123'
+
+    [Environment]::SetEnvironmentVariable(
+        "VAULT",
+        $vaultPassword,
+        [System.EnvironmentVariableTarget]::User
+    )
 
     function Get-Credential {
         [CmdletBinding()]
@@ -62,12 +68,6 @@ Describe 'Integration Tests' {
 
     Context 'Keeper Vault Integration' {
         BeforeAll {
-            Mock New-Object {
-                return [PSCredential]::new(
-                    'User',
-                    (ConvertTo-SecureString $env:VAULT -AsPlainText -Force)
-                )
-            }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }
@@ -103,12 +103,6 @@ Describe 'Integration Tests' {
 
     Context 'Logic Branching' {
         BeforeAll {
-            Mock New-Object {
-                return [PSCredential]::new(
-                    'User',
-                    (ConvertTo-SecureString $env:VAULT -AsPlainText -Force)
-                )
-            }
             Mock New-Item { return 'C:\Mock\Temp' }
             Mock Remove-Item {}
             Mock Set-Content {}
