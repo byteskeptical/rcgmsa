@@ -21,8 +21,9 @@ jobs:
 
       - name: Install
         run: |
-          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
-          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser
 
       - name: Lint
         run: |
@@ -42,7 +43,8 @@ jobs:
         run: |
           $config = New-PesterConfiguration
           $config.Output.Verbosity = 'Detailed'
+          $config.PassThru = $true
           $config.Run.Exit = $true
-          $config.Run.Path = .\tests\rcgmsa.Tests.ps1
+          $config.Run.Path = '.\tests'
 
-          Invoke-Pester -Configuration $config -Passthru
+          Invoke-Pester -Configuration $config
