@@ -72,7 +72,7 @@ Describe 'Integration Tests' {
             Mock Get-Secret {
                 [CmdletBinding()]
                 param(
-                    [Parameter(Position=0)]$RecordID,
+                    [Parameter(Position=0)]$Name,
                     [Parameter(Position=1)]$FieldID,
                     $Vault,
                     [switch]$AsPlainText
