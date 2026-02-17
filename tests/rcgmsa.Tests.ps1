@@ -68,6 +68,22 @@ Describe 'Integration Tests' {
                 $vaultPassword,
                 [System.EnvironmentVariableTarget]::User
             )
+
+            Mock Get-Secret {
+                [CmdletBinding()]
+                param(
+                    [Parameter(Position=0)]$RecordID,
+                    [Parameter(Position=1)]$FieldID,
+                    $Vault,
+                    [switch]$AsPlainText
+                )
+
+                if ($AsPlainText) {
+                    return $keeperSecret
+                }
+                
+                return $fileBytes
+            }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }
@@ -76,7 +92,7 @@ Describe 'Integration Tests' {
         }
 
         It 'Should retrieve secrets and process files when -Keeper is used' {
-            & $scriptPath -Command 'hostname' -Computers 'server1' -User 'gmsa$' -Keeper $secretName -Vault 'devops'
+            & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName -Vault 'devops'
 
             $api_key = [Environment]::GetEnvironmentVariable('KEEPER_API_KEY', 'User')
             $api_key | Should -Be $keeperSecret.API_KEY
