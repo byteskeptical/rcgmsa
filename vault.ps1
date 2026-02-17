@@ -40,24 +40,24 @@ $requiredModules.ForEach{
 }
 
 Write-Host "Getting secure store password"
-$credential = Get-Credential -UserName $vault
-$credential.Password | Export-Clixml -Path $path
+$credential = Get-Credential -UserName $Vault
+$credential.Password | Export-Clixml -Path $Path
 
-$password = Import-CliXml -Path $path
+$password = Import-CliXml -Path $Path
 $parameters = @{
-    Name = $vault
+    Name = $Vault
     ModuleName = $requiredModules[0]
     VaultParameters = @{
         Confirm = $false
         Interaction = $null
         Password = $password
-        PasswordTimeout = $timeout
+        PasswordTimeout = $Timeout
     }
     DefaultVault = $true
 }
 
-Write-Host "Registering [$vault] vault"
+Write-Host "Registering [$Vault] vault"
 [Environment]::SetEnvironmentVariable("VAULT", $password, [System.EnvironmentVariableTarget]::User)
 Register-SecretVault @parameters
-Remove-Item -Path $path -Force
+Remove-Item -Path $Path -Force
 Write-Host "All done!!!"

@@ -3,18 +3,13 @@ BeforeAll {
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
         Files    = 'license.key'
+        Keys     = 'Files'
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
     $setupPath = "$PSScriptRoot/../vault.ps1"
     $vaultName = 'devops'
     $vaultPassword  = 'VaultPassword123'
-
-    [Environment]::SetEnvironmentVariable(
-        "VAULT",
-        $vaultPassword,
-        [System.EnvironmentVariableTarget]::User
-    )
 
     function Get-Credential {
         [CmdletBinding()]
@@ -25,7 +20,7 @@ BeforeAll {
             [Parameter(Mandatory=$false)]
             [string]$Message
         )
-        $securePass = ConvertTo-SecureString $env:VAULT -AsPlainText -Force
+        $securePass = ConvertTo-SecureString $vaultPassword -AsPlainText -Force
         return [PSCredential]::new($UserName, $securePass)
     }
 

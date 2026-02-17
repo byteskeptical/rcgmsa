@@ -33,7 +33,7 @@ jobs:
 
           if ($results) {
               $results | Format-Table
-              Write-Error 'PSScriptAnalyzer found issues. Please fix them.'
+              Write-Error 'PSScriptAnalyzer found issues. Please fix them.' -ErrorAction Stop
           } else {
               Write-Host 'PSScriptAnalyzer passed.'
           }
@@ -45,8 +45,4 @@ jobs:
           $config.Run.Exit = $true
           $config.Run.Path = .\tests\rcgmsa.Tests.ps1
 
-          $result = Invoke-Pester -Configuration $config
-
-          if ($result.FailedCount -gt 0) {
-              exit 1
-          }
+          Invoke-Pester -Configuration $config -Passthru
