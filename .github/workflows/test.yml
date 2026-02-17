@@ -43,7 +43,7 @@ jobs:
         run: |
           $config = New-PesterConfiguration
           $config.Output.Verbosity = 'Detailed'
-          $config.PassThru = $true
+          $config.Run.PassThru = $true
           $config.Run.Exit = $true
           $config.Run.Path = '.\tests'
 
