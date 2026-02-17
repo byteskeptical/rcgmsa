@@ -63,6 +63,11 @@ Describe 'Integration Tests' {
 
     Context 'Keeper Vault Integration' {
         BeforeAll {
+            [Environment]::SetEnvironmentVariable(
+                "VAULT",
+                $vaultPassword,
+                [System.EnvironmentVariableTarget]::User
+            )
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }

@@ -46,5 +46,6 @@ jobs:
           $config.Run.PassThru = $true
           $config.Run.Exit = $true
           $config.Run.Path = '.\tests'
+          $config.Run.Throw = $true
 
           Invoke-Pester -Configuration $config
