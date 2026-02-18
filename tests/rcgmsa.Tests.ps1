@@ -79,14 +79,11 @@ Describe 'Integration Tests' {
                 )
 
                 if ($FieldID) {
-                    return Microsoft.PowerShell.SecretManagement\Get-Secret -Name $FieldID -Vault $Vault
+                    return $fileBytes
                 }
 
-                $result = Microsoft.PowerShell.SecretManagement\Get-Secret @PSBoundParameters
-                if ($AsPlainText -and $result.ContainsKey('Files')) {
-                    $result.Files = $result.Files | ConvertFrom-Json -AsHashtable
-                }
-                return $result
+                $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json -AsHashtable
+                return $keeperSecret
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
