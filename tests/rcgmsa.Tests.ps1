@@ -2,7 +2,7 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = 'license.key'
+        Files    = '{"license.key": "file-id-123"}'
         Keys     = 'Files'
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
@@ -35,7 +35,7 @@ BeforeAll {
     $fileBytes = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    Set-Secret -Name $keeperSecret.Files -Secret $fileBytes -Vault $vaultName
+    Set-Secret -Name 'file-id-123' -Secret $fileBytes -Vault $vaultName
 }
 
 Describe 'Integration Tests' {
@@ -63,12 +63,6 @@ Describe 'Integration Tests' {
 
     Context 'Keeper Vault Integration' {
         BeforeAll {
-            [Environment]::SetEnvironmentVariable(
-                "VAULT",
-                $vaultPassword,
-                [System.EnvironmentVariableTarget]::User
-            )
-
             Mock Get-Secret {
                 [CmdletBinding()]
                 param(
@@ -78,11 +72,15 @@ Describe 'Integration Tests' {
                     [switch]$AsPlainText
                 )
 
-                if ($AsPlainText) {
-                    return $keeperSecret
+                if ($FieldID) {
+                    return Microsoft.PowerShell.SecretManagement\Get-Secret -Name $FieldID -Vault $Vault
                 }
-                
-                return $fileBytes
+
+                $result = Microsoft.PowerShell.SecretManagement\Get-Secret @PSBoundParameters
+                if ($AsPlainText -and $result.ContainsKey('Files')) {
+                    $result.Files = $result.Files | ConvertFrom-Json -AsHashtable
+                }
+                return $result
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
