@@ -29,6 +29,12 @@ BeforeAll {
 
     Remove-Item Function:\Get-Credential -ErrorAction Stop
 
+    [Environment]::SetEnvironmentVariable(
+        "VAULT",
+        $vaultPassword,
+        [System.EnvironmentVariableTarget]::User
+    )
+
     $securePass = ConvertTo-SecureString $vaultPassword -AsPlainText -Force
     Unlock-SecretStore -Password $securePass
 
