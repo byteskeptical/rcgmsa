@@ -2,9 +2,9 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = '["License"]'
+        Files    = '["license.key"]'
         Keys     = 'Files'
-        License  = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
+        'license.key' = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
@@ -40,7 +40,7 @@ BeforeAll {
     Unlock-SecretStore -Password $securePass
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json
+    $keeperSecret.Files = @($keeperSecrets.Files.Trim('[]').Split(',').Trim())
 }
 
 Describe 'Integration Tests' {
@@ -77,11 +77,11 @@ Describe 'Integration Tests' {
                     [switch]$AsPlainText
                 )
 
-                if ($FieldID) {
-                    return $keeperSecret[$FieldID]
+                if ($AsPlainText) {
+                    return $keeperSecret
                 }
 
-                return $keeperSecret
+                return $keeperSecret[$FieldID]
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
