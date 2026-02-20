@@ -2,7 +2,7 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = '{"license.key": "License"}'
+        Files    = '["License"]'
         Keys     = 'Files'
         License  = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
@@ -40,6 +40,7 @@ BeforeAll {
     Unlock-SecretStore -Password $securePass
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
+    $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json
 }
 
 Describe 'Integration Tests' {
@@ -75,8 +76,6 @@ Describe 'Integration Tests' {
                     $Vault,
                     [switch]$AsPlainText
                 )
-
-                $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json -AsHashtable
 
                 if ($FieldID) {
                     return $keeperSecret[$FieldID]
