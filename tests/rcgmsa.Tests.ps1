@@ -2,8 +2,9 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = '{"license.key": "file-id-123"}'
+        Files    = '{"license.key": "License"}'
         Keys     = 'Files'
+        License  = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
@@ -38,10 +39,7 @@ BeforeAll {
     $securePass = ConvertTo-SecureString $vaultPassword -AsPlainText -Force
     Unlock-SecretStore -Password $securePass
 
-    $fileBytes = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
-
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    Set-Secret -Name 'file-id-123' -Secret $fileBytes -Vault $vaultName
 }
 
 Describe 'Integration Tests' {
@@ -78,11 +76,12 @@ Describe 'Integration Tests' {
                     [switch]$AsPlainText
                 )
 
+                $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json -AsHashtable
+
                 if ($FieldID) {
-                    return $fileBytes
+                    return $keeperSecret[$FieldID]
                 }
 
-                $keeperSecret.Files = $keeperSecret.Files | ConvertFrom-Json -AsHashtable
                 return $keeperSecret
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
