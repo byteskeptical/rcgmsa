@@ -83,6 +83,7 @@ Describe 'Integration Tests' {
 
                 return $keeperSecret[$FieldID]
             }
+            Mock Import-Module {}
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }
