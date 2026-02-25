@@ -40,7 +40,7 @@ BeforeAll {
     Unlock-SecretStore -Password $securePass
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    $keeperSecret.Files = @($keeperSecret.Files.Trim('[]').Split(',').Trim())
+    $keeperSecret.Files = @($keeperSecret.Files | ConvertFrom-Json)
 }
 
 Describe 'Integration Tests' {
