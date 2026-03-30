@@ -135,7 +135,6 @@ $parameters = @{
     ComputerName      = $Computers
     Credential        = $account
     ScriptBlock       = {
-        $cmd = $using:sb
         $cred = $using:credential
         $remoteSysTempDir = [System.IO.Path]::GetTempPath()
         $remoteTempDir = Join-Path -Path $remoteSysTempDir -ChildPath ([Guid]::NewGuid().ToString())
@@ -163,12 +162,12 @@ $parameters = @{
             $orbParameters = @{
                 ComputerName  = $using:Orbs
                 Credential    = $using:account
-                ScriptBlock   = { & $using:cmd }
+                ScriptBlock   = { & $using:sb }
                 SessionOption = $using:sessionOptions
             }
             Invoke-Command @orbParameters
         } else {
-            Invoke-Command -ScriptBlock { & $cmd }
+            Invoke-Command -ScriptBlock { & $using:sb }
         }
 
         Remove-Item -Path $remoteTempDir -Recurse -Force
