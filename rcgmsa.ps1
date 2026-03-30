@@ -135,18 +135,20 @@ $parameters = @{
     ComputerName      = $Computers
     Credential        = $account
     ScriptBlock       = {
+        $cmd = $using:sb
+        $cred = $using:credential
         $remoteSysTempDir = [System.IO.Path]::GetTempPath()
         $remoteTempDir = Join-Path -Path $remoteSysTempDir -ChildPath ([Guid]::NewGuid().ToString())
 
         New-Item -Path $remoteTempDir -ItemType Directory -Force | Out-Null
 
-        if ($using:credential) {
-            foreach ($field in ($using:credential.Keys)) {
+        if ($cred) {
+            foreach ($field in ($cred.Keys)) {
                 if ($field -ne 'Files') {
                     $name = "KEEPER_$($field.ToUpper())"
                     [Environment]::SetEnvironmentVariable(
                         $name,
-                        $using:credential[$field],
+                        $cred[$field],
                         [System.EnvironmentVariableTarget]::User
                     )
                 } else {
@@ -158,9 +160,15 @@ $parameters = @{
         }
 
         if ($using:Orbs) {
-            Invoke-Command -ComputerName $using:Orbs -Credential $using:account -ScriptBlock { & $using:sb } -SessionOption $using:sessionOptions
+            $orbParameters = @{
+                ComputerName  = $using:Orbs
+                Credential    = $using:account
+                ScriptBlock   = { & $using:cmd }
+                SessionOption = $using:sessionOptions
+            }
+            Invoke-Command @orbParameters
         } else {
-            Invoke-Command -ScriptBlock { & $using:sb }
+            Invoke-Command -ScriptBlock { & $cmd }
         }
 
         Remove-Item -Path $remoteTempDir -Recurse -Force
