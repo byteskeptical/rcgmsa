@@ -2,8 +2,9 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = '["license.key"]'
+        Files    = '{"license.key": "FileID_123"}'
         Keys     = 'Files'
+        'FileID_123' = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
@@ -39,7 +40,14 @@ BeforeAll {
     Unlock-SecretStore -Password $securePass
 
     Set-Secret -Name $secretName -Secret $keeperSecret -Vault $vaultName
-    $keeperSecret.Files = @($keeperSecret.Files | ConvertFrom-Json)
+
+    $nvc = [System.Collections.Specialized.NameValueCollection]::new()
+    $jsonObj = $keeperSecret.Files | ConvertFrom-Json
+    
+    foreach ($prop in $jsonObj.psobject.properties) {
+        $nvc.Add($prop.Name, $prop.Value) 
+    }
+    $keeperSecret.Files = $nvc
 }
 
 Describe 'Integration Tests' {
