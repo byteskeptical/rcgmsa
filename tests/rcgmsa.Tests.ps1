@@ -2,9 +2,8 @@ BeforeAll {
     $keeperSecret = @{
         API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
         DB_PASS  = 'SuperSecretPass'
-        Files    = '["license.key"]'
+        Files    = '{"license.key": [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')}'
         Keys     = 'Files'
-        'license.key' = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
     $scriptPath = "$PSScriptRoot/../rcgmsa.ps1"
     $secretName = '9vb_wew-d6_AmgUNmIO6Ez'
@@ -71,9 +70,8 @@ Describe 'Integration Tests' {
             Mock Get-Secret {
                 [CmdletBinding()]
                 param(
-                    [Parameter(Position=0)]$Name,
-                    [Parameter(Position=1)]$FieldID,
-                    $Vault,
+                    [Parameter(Position=0)]$Vault,
+                    [Parameter(Position=1)]$Name,
                     [switch]$AsPlainText
                 )
 
@@ -83,7 +81,6 @@ Describe 'Integration Tests' {
 
                 return $keeperSecret[$FieldID]
             }
-            Mock Import-Module {}
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock New-Item { return 'C:\Mock\Temp' }
