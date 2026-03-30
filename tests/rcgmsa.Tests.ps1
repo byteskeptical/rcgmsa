@@ -89,7 +89,6 @@ Describe 'Integration Tests' {
 
                 return [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
             }
-            Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
             Mock Set-Content {}
         }
@@ -113,7 +112,7 @@ Describe 'Integration Tests' {
                 return $ScriptBlock.ToString() 
             }
 
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName 6>&1
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
