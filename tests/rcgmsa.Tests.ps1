@@ -91,8 +91,6 @@ Describe 'Integration Tests' {
             }
             Mock Invoke-Command { return 'Remote Execution Successful' }
             Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
-            Mock New-Item { return 'C:\Mock\Temp' }
-            Mock Remove-Item {}
             Mock Set-Content {}
         }
 
@@ -124,8 +122,6 @@ Describe 'Integration Tests' {
 
     Context 'Logic Branching' {
         BeforeAll {
-            Mock New-Item { return 'C:\Mock\Temp' }
-            Mock Remove-Item {}
             Mock Set-Content {}
         }
 
