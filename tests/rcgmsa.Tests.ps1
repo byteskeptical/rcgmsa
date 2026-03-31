@@ -89,8 +89,6 @@ Describe 'Integration Tests' {
 
                 return [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
             }
-            Mock Join-Path { param($Path, $ChildPath) return "$Path\$ChildPath" }
-            Mock Set-Content {}
         }
 
         It 'Should retrieve secrets and process files when -Keeper is used' {
@@ -107,12 +105,7 @@ Describe 'Integration Tests' {
         }
 
         It 'Should inject KEEPER_ variables into the scriptblock' {
-            Mock Invoke-Command -MockWith { 
-                param($ScriptBlock) 
-                return $ScriptBlock.ToString() 
-            }
-
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName 6>&1
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
@@ -120,10 +113,6 @@ Describe 'Integration Tests' {
     }
 
     Context 'Logic Branching' {
-        BeforeAll {
-            Mock Set-Content {}
-        }
-
         It 'Should execute the orbs logic when provided' {
             Mock Invoke-Command { return 'Jump Host Success' }
 
