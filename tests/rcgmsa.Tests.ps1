@@ -92,6 +92,8 @@ Describe 'Integration Tests' {
         }
 
         It 'Should retrieve secrets and process files when -Keeper is used' {
+            Mock Remove-Item {}
+
             & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName -Vault 'devops'
 
             $api_key = [Environment]::GetEnvironmentVariable('KEEPER_API_KEY', 'User')
@@ -99,13 +101,23 @@ Describe 'Integration Tests' {
 
             [Environment]::SetEnvironmentVariable('KEEPER_API_KEY', $null, 'User')
 
-            Assert-MockCalled Set-Content -ParameterFilter {
-                $Path -match 'license.key'
-            } -Times 1
+            $sysTemp = [System.IO.Path]::GetTempPath()
+            $foundFile = Get-ChildItem -Path $sysTemp -Filter 'license.key' -Recurse -File | Sort-Object CreationTime -Descending | Select-Object -First 1
+
+            $foundFile | Should -Not -BeNullOrEmpty
+            $foundFile.Name | Should -Be 'license.key'
+
+            $fileBytes = [System.IO.File]::ReadAllBytes($foundFile.FullName)
+            $fileContent = [System.Text.Encoding]::UTF8.GetString($fileBytes)
+            $fileContent | Should -Be 'RealFileContent'
+
+            if ($foundFile) { 
+                Remove-Item -Path $foundFile.DirectoryName -Recurse -Force
+            }
         }
 
         It 'Should inject KEEPER_ variables into the scriptblock' {
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName
+            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName 6>&1 | Out-String
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
