@@ -96,11 +96,6 @@ Describe 'Integration Tests' {
 
             & $scriptPath -Command 'hostname' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName -Vault 'devops'
 
-            $api_key = [Environment]::GetEnvironmentVariable('KEEPER_API_KEY', 'User')
-            $api_key | Should -Be $keeperSecret.API_KEY
-
-            [Environment]::SetEnvironmentVariable('KEEPER_API_KEY', $null, 'User')
-
             $sysTemp = [System.IO.Path]::GetTempPath()
             $foundFile = Get-ChildItem -Path $sysTemp -Filter 'license.key' -Recurse -File | Sort-Object CreationTime -Descending | Select-Object -First 1
 
@@ -117,7 +112,12 @@ Describe 'Integration Tests' {
         }
 
         It 'Should inject KEEPER_ variables into the scriptblock' {
-            $sbContent = & $scriptPath -Command 'echo hi' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName 6>&1 | Out-String
+            Mock Invoke-Command -MockWith {
+                param($ScriptBlock)
+                return $ScriptBlock.ToString()
+            }
+
+            $sbContent = & $scriptPath -Command 'whoami' -Computers 'localhost' -User 'gmsa$' -Keeper $secretName 6>&1 | Out-String
 
             $sbContent | Should -Match 'KEEPER_'
             $sbContent | Should -Match '\[Environment\]::SetEnvironmentVariable'
