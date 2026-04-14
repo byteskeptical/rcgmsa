@@ -1,5 +1,12 @@
 BeforeAll {
     $script:credFile      = [System.IO.Path]::GetTempFileName()
+    $script:keeperSecret  = @{
+        API_KEY  = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
+        DB_PASS  = 'SuperSecretPass'
+        Files    = '{"license.key": "FileID_123"}'
+        Keys     = 'Files'
+        'FileID_123' = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
+    }
     $script:scriptPath    = "$PSScriptRoot/../rcgmsa.ps1"
     $script:secretName    = '9vb_wew-d6_AmgUNmIO6Ez'
     $script:setupPath     = "$PSScriptRoot/../vault.ps1"
@@ -32,15 +39,15 @@ BeforeAll {
     $securePass = ConvertTo-SecureString $script:vaultPassword -AsPlainText -Force
     Unlock-SecretStore -Password $securePass
 
-    Set-Secret -Name $script:secretName -Secret @{
-        API_KEY = '06ed1705-a2d5-4d16-b3b2-1a2814e7ef67'
-        DB_PASS = 'SuperSecretPass'
-        Files   = '{"license.key": "FileID_123"}'
-    } -Vault $script:vaultName
+    Set-Secret -Name $secretName -Secret $script:keeperSecret -Vault $script:vaultName
 
-    Set-Secret -Name "$($script:secretName).Files[license.key]"
-               -Secret ([System.Text.Encoding]::UTF8.GetBytes('RealFileContent')) `
-               -Vault $script:vaultName
+    $nvc = [System.Collections.Specialized.NameValueCollection]::new()
+    $json = $script:keeperSecret.Files | ConvertFrom-Json
+    
+    foreach ($prop in $json.psobject.properties) {
+        $nvc.Add($prop.Name, $prop.Value) 
+    }
+    $keeperSecret.Files = $nvc
 }
 
 Describe 'Integration Tests' {
@@ -79,17 +86,11 @@ Describe 'Integration Tests' {
                     [switch]$AsPlainText
                 )
 
-                $real = Microsoft.PowerShell.SecretManagement\Get-Secret `
-                            -Vault $Vault -Name $Name -AsPlainText:$AsPlainText
-
-                if ($AsPlainText -and $real -is [hashtable] -and $real.ContainsKey('Files')) {
-                    $nvc = [System.Collections.Specialized.NameValueCollection]::new()
-                    ($real.Files | ConvertFrom-Json).psobject.properties |
-                        ForEach-Object { $nvc.Add($_.Name, $_.Value) }
-                    $real.Files = $nvc
+                if ($AsPlainText) {
+                    return $keeperSecret
                 }
 
-                return $real
+                return [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
             }
         }
 
