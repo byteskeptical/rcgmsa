@@ -89,7 +89,7 @@ Describe 'Integration Tests' {
                 )
 
                 if ($AsPlainText) {
-                    return $keeperSecret
+                    return $script:keeperSecret
                 }
 
                 return $script:keeperSecret[$Name]
