@@ -5,7 +5,6 @@ BeforeAll {
         DB_PASS  = 'SuperSecretPass'
         Files    = '{"license.key": "FileID_123"}'
         Keys     = 'Files'
-        'FileID_123' = [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
     }
     $script:scriptPath    = "$PSScriptRoot/../rcgmsa.ps1"
     $script:secretName    = '9vb_wew-d6_AmgUNmIO6Ez'
@@ -47,7 +46,10 @@ BeforeAll {
     foreach ($prop in $json.psobject.properties) {
         $nvc.Add($prop.Name, $prop.Value) 
     }
-    $keeperSecret.Files = $nvc
+    $script:keeperSecret.Files = $nvc
+
+    $script:keeperSecret["$($script:secretName).Files[license.key]"] = `
+        [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
 }
 
 Describe 'Integration Tests' {
@@ -90,7 +92,7 @@ Describe 'Integration Tests' {
                     return $keeperSecret
                 }
 
-                return [System.Text.Encoding]::UTF8.GetBytes('RealFileContent')
+                return $script:keeperSecret[$Name]
             }
         }
 
@@ -119,11 +121,6 @@ Describe 'Integration Tests' {
         }
 
         It 'Should inject KEEPER_ variables into the scriptblock' {
-            Mock Invoke-Command -ParameterFilter { $ComputerName } -MockWith {
-                param($ComputerName, $Credential, $ScriptBlock, $SessionOption)
-                & $ScriptBlock
-            }
-
             & $script:scriptPath -Command 'whoami' -Computers 'localhost' `
                 -User 'gmsa$' -Keeper $script:secretName 6>&1 | Out-String
 

@@ -51,7 +51,7 @@ jobs:
 
           $results = Invoke-Pester -Configuration $config
 
-          if ($result.FailedCount -gt 0) {
-              Write-Error "$($result.FailedCount) test(s) failed. See output details above."
+          if ($results.FailedCount -gt 0) {
+              Write-Error "$($results.FailedCount) test(s) failed. See output details above."
               exit 1
           }
