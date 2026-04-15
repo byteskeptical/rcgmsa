@@ -113,7 +113,7 @@ if ($Keeper) {
 
         if ('Files' -in $credential.Keys) {
             foreach ($filename in ($credential.Files)) {
-                $data = Get-Secret -Vault $Vault -Name "$Keeper.Files[$filename]"
+                $data = Get-Secret -Vault $Vault -Name "$($Keeper).Files[$filename]"
                 $filepath = Join-Path -Path $tempDir -ChildPath $filename
                 Set-Content -Path $filepath -Value $data -AsByteStream
             }

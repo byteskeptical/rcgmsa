@@ -44,7 +44,7 @@ jobs:
           $config = New-PesterConfiguration
           $config.Output.Verbosity = 'Detailed'
           $config.Run.PassThru = $true
-          $config.Run.Exit = $false
+          $config.Run.Exit = $true
           $config.Run.Path = '.\tests'
           $config.Should.ErrorAction = 'Continue'
           $config.TestResult.Enabled = $true
