@@ -43,15 +43,9 @@ jobs:
         run: |
           $config = New-PesterConfiguration
           $config.Output.Verbosity = 'Detailed'
-          $config.Run.PassThru = $true
           $config.Run.Exit = $true
           $config.Run.Path = '.\tests'
           $config.Should.ErrorAction = 'Continue'
           $config.TestResult.Enabled = $true
 
-          $results = Invoke-Pester -Configuration $config
-
-          if ($results.FailedCount -gt 0) {
-              Write-Error "$($results.FailedCount) test(s) failed. See output details above."
-              exit 1
-          }
+          Invoke-Pester -Configuration $config
