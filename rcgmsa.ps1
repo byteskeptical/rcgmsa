@@ -62,14 +62,16 @@ if ($v) {
 
 $account = (New-Object System.Management.Automation.PSCredential("$Domain\$User"))
 $command = $Command -replace 'javaopts\=', 'javaopts '
+$credential  = $null
 if ($Raw) {
     $sb = $command
 } else {
     $sb = [scriptblock]::Create($command)
 }
+$keeperFiles = $null
 $scriptPath = $MyInvocation.MyCommand.Path
 $serverName = $env:COMPUTERNAME
-$sessionOptions = New-PssessionOption -NoCompression
+$sessionOptions = New-PSSessionOption -NoCompression
 $sysTempDir = [System.IO.Path]::GetTempPath()
 $tempDir = Join-Path -Path $sysTempDir -ChildPath ([Guid]::NewGuid().ToString())
 
@@ -86,8 +88,8 @@ Write-Host "********************************************************************
 
 if ($Keeper) {
     $requiredModules = @(
-        'Microsoft.PowerShell.SecretStore',
         'Microsoft.PowerShell.SecretManagement',
+        'Microsoft.PowerShell.SecretStore',
         'SecretManagement.Keeper'
     )
 
@@ -107,11 +109,11 @@ if ($Keeper) {
         $vault_credential = [System.Environment]::GetEnvironmentVariable("VAULT", [System.EnvironmentVariableTarget]::User)
         $password = ConvertTo-SecureString -String $vault_credential -AsPlainText -Force
         Unlock-SecretStore -Password $password
-        $credential = Get-Secret -Vault $Vault $Keeper -AsPlainText -ErrorAction Stop
+        $credential = Get-Secret -Vault $Vault -Name $Keeper -AsPlainText -ErrorAction Stop
 
         if ('Files' -in $credential.Keys) {
             foreach ($filename in ($credential.Files)) {
-                $data = Get-Secret -Vault $Vault $Keeper $credential.Files[$filename]
+                $data = Get-Secret -Vault $Vault -Name "$Keeper.Files[$filename]"
                 $filepath = Join-Path -Path $tempDir -ChildPath $filename
                 Set-Content -Path $filepath -Value $data -AsByteStream
             }
@@ -120,8 +122,8 @@ if ($Keeper) {
         }
     } catch [Microsoft.PowerShell.SecretManagement.PasswordRequiredException]  {
         Write-Host "Unlocking Vault $Vault for one hour."
-        Unlock-SecretStore -Password $vault_credential
-        $credential = Get-Secret -Vault $Vault $Keeper -AsPlainText -ErrorAction Stop
+        Unlock-SecretStore -Password $password
+        $credential = Get-Secret -Vault $Vault -Name $Keeper -AsPlainText -ErrorAction Stop
     } catch [System.Exception] {
         Write-Error "Failed to retrieve Keeper secret.`nError: $($_.Exception.Message)"
         $host.SetShouldExit(1)
@@ -133,22 +135,23 @@ $parameters = @{
     ComputerName      = $Computers
     Credential        = $account
     ScriptBlock       = {
+        $cred = $using:credential
         $remoteSysTempDir = [System.IO.Path]::GetTempPath()
         $remoteTempDir = Join-Path -Path $remoteSysTempDir -ChildPath ([Guid]::NewGuid().ToString())
 
         New-Item -Path $remoteTempDir -ItemType Directory -Force | Out-Null
 
-        if ($credential) {
-            foreach ($field in ($credential.Keys)) {
+        if ($cred) {
+            foreach ($field in ($cred.Keys)) {
                 if ($field -ne 'Files') {
                     $name = "KEEPER_$($field.ToUpper())"
                     [Environment]::SetEnvironmentVariable(
                         $name,
-                        $credential[$field],
+                        $cred[$field],
                         [System.EnvironmentVariableTarget]::User
                     )
                 } else {
-                    foreach ($filename in $keeperFiles) {
+                    foreach ($filename in $using:keeperFiles) {
                         Copy-Item -Path $filename.FullName -Destination $remoteTempDir
                     }
                 }
@@ -156,7 +159,13 @@ $parameters = @{
         }
 
         if ($using:Orbs) {
-            Invoke-Command -ComputerName $using:Orbs -Credential $using:account -ScriptBlock { & $using:sb } -SessionOption $using:sessionOptions
+            $orbParameters = @{
+                ComputerName  = $using:Orbs
+                Credential    = $using:account
+                ScriptBlock   = { & $using:sb }
+                SessionOption = $using:sessionOptions
+            }
+            Invoke-Command @orbParameters
         } else {
             Invoke-Command -ScriptBlock { & $using:sb }
         }
@@ -188,7 +197,7 @@ try {
          ($spnRelatedTypes -contains $errorType) )
     {
         Write-Warning "First attempt failed with a possible SPN issue. Retrying with -IncludePortInSPN."
-        $sessionOptions = New-PssessionOption -IncludePortInSPN -NoCompression
+        $sessionOptions = New-PSSessionOption -IncludePortInSPN -NoCompression
         $remoteResults = Invoke-Command @parameters -SessionOption $sessionOptions
         Write-Host "$remoteResults"
     } else {

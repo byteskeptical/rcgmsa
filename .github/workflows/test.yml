@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  push:
+    branches: [root]
+  pull_request:
+    branches: [root]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  test:
+    name: Validate
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Install
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser
+
+      - name: Lint
+        run: |
+          $excludedRules = @(
+              'PSAvoidUsingConvertToSecureStringWithPlainText'
+          )
+          $results = Invoke-ScriptAnalyzer -ExcludeRule $excludedRules -Path .\rcgmsa.ps1 -Severity Error
+
+          if ($results) {
+              $results | Format-Table
+              Write-Error 'PSScriptAnalyzer found issues. Please fix them.' -ErrorAction Stop
+          } else {
+              Write-Host 'PSScriptAnalyzer passed.'
+          }
+
+      - name: Test
+        run: |
+          $config = New-PesterConfiguration
+          $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          $config.Run.Path = '.\tests'
+          $config.Should.ErrorAction = 'Continue'
+          $config.TestResult.Enabled = $true
+
+          Invoke-Pester -Configuration $config
